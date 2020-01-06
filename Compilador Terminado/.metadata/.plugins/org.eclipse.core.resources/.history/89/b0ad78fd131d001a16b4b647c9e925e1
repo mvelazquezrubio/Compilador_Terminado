@@ -1,0 +1,301 @@
+package Compilador;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
+import javax.swing.*;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
+import javax.swing.table.*;
+public class Vista extends JFrame implements ActionListener{
+	JMenuBar menuPrincipal;
+	JMenu opcion,analisis,generacion,temas;
+	JRadioButton abrir;
+	JFileChooser archivoSeleccionado;
+	File archivo;
+	JTabbedPane documentos, analizada, resultados, objetos;
+	JTextArea Doc,Lex,Result,inter,objeto;
+	JList<String> tokens;
+	boolean ban=true;
+	static DefaultTableModel modelo;
+	String titulos[]={"Nombre","Tipo","Valor","Posicion","Alcance"};
+	JTable tabla;
+	JScrollPane Tabla;
+	static DefaultTableModel modeloCuadruplo;
+	String titulosCuadruplo[]={"Operador","Argumento 1","Argumento 2","Resultado"};
+	JTable tablaCuadruplo;
+	JScrollPane TablaCuadruplo;
+	public Vista() {
+		formatoWindows();
+		inicializaciones();
+		if(archivoSeleccionado.showOpenDialog(this)==JFileChooser.CANCEL_OPTION) 
+			return;
+		hazInterfaz();
+		hazEscuchas();
+	}
+	
+	public Vista(boolean edicion) {
+		setTitle("Selección De  Interfaz");
+		Dimension dim;
+		dim=getToolkit().getScreenSize().getSize();
+		setSize(dim);
+		setLayout(null);
+		setResizable(false);
+		setLocationRelativeTo(null);
+		JLabel nimbus = new JLabel(Rutinas.AjustarImagen("Nimbus2.png", 450, 500));
+		JLabel Smart = new JLabel(Rutinas.AjustarImagen("Smart2.png", 450, 500));
+		JLabel Windows = new JLabel(Rutinas.AjustarImagen("Windows2.png", 450, 500));
+		nimbus.setBounds(1, 1, 500, 500);
+		Smart.setBounds(451, 1, 500, 500);
+		Windows.setBounds(851, 1, 500, 500);
+		add(nimbus);
+		add(Smart);
+		add(Windows);
+		setVisible(true);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setIconImage(new ImageIcon("Icono.png").getImage());
+		
+	}
+	public void inicializaciones() {
+		/*Menu*/
+		menuPrincipal=new JMenuBar();
+		opcion=new JMenu("Archivo");
+		analisis=new JMenu("Analisis");
+		generacion=new JMenu("Generación");
+		temas=new JMenu("Temas");
+		/*Opciones del menu*/
+		/*Menu 1*/
+		opcion.add(new JMenuItem("Guardar",Rutinas.AjustarImagen("Nuevo.png", 25, 25)));
+		opcion.setIcon(Rutinas.AjustarImagen("Archivo.png", 25, 25));
+		analisis.setIcon(Rutinas.AjustarImagen("Analisis.png", 25, 25));
+		opcion.getItem(0).setEnabled(false);
+		opcion.addSeparator();
+		opcion.add(new JMenuItem("Modificar",Rutinas.AjustarImagen("Modificar.png", 25, 25)));
+		/*Menu 2*/
+		analisis.add(new JMenuItem("Lexico",Rutinas.AjustarImagen("Lexico.png", 25, 25)));
+		analisis.addSeparator();
+		analisis.add(new JMenuItem("Sintactico",Rutinas.AjustarImagen("Sintactico.png", 25, 25)));
+		analisis.getItem(2).setEnabled(false);
+		analisis.addSeparator();
+		analisis.add(new JMenuItem("Semantico",Rutinas.AjustarImagen("Semantico.png", 25, 25)));
+		analisis.getItem(4).setEnabled(false);
+		/*Menu 3*/
+		generacion.setEnabled(false);
+		generacion.add(new JMenuItem("Intermedio",Rutinas.AjustarImagen("Intermedio.png", 25, 25)));
+		generacion.addSeparator();
+		generacion.getItem(0).setEnabled(false);
+		generacion.add(new JMenuItem("Objeto",Rutinas.AjustarImagen("Objeto.png", 25, 25)));
+		generacion.getItem(2).setEnabled(false);
+		generacion.setIcon(Rutinas.AjustarImagen("Generacion.png", 25, 25));
+		/*Ventana de archivo*/
+		archivoSeleccionado= new JFileChooser("Abrir");
+		archivoSeleccionado.setDialogTitle("Abrir");
+		archivoSeleccionado.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		/*SubVentanas de documento, codigo y resultado*/
+		Doc = new JTextArea();
+		Doc.setFont(new Font("Consolas", Font.PLAIN, 12));
+		Lex = new JTextArea();
+		Lex.setFont(new Font("Consolas", Font.PLAIN, 12));
+		Lex.setEnabled(false);
+		Result = new JTextArea();
+		Result.setFont(new Font("Consolas", Font.PLAIN, 12));
+		Result.setEnabled(false);
+		objeto = new JTextArea();
+		objeto.setFont(new Font("Consolas", Font.PLAIN, 12));
+		objeto.setEnabled(false);
+		documentos = new JTabbedPane();
+		analizada = new JTabbedPane();
+		resultados = new JTabbedPane();
+		objetos = new JTabbedPane();
+	}
+	private void hazInterfaz() {
+		setTitle("Analizador");
+		Dimension dim;
+		dim=getToolkit().getScreenSize().getSize();
+		setSize(dim);
+		setLayout(null);
+		setResizable(false);
+		setLocationRelativeTo(null);
+		setJMenuBar(menuPrincipal);
+		menuPrincipal.add(opcion);
+		menuPrincipal.add(analisis);
+		menuPrincipal.add(generacion);
+		documentos.setToolTipText("Aqui se muestra el codigo");
+		archivo=archivoSeleccionado.getSelectedFile();
+		documentos.addTab(archivo.getName().toString(),new JScrollPane(Doc));
+		analizada.addTab("Compilador",new JScrollPane(Lex));
+		resultados.addTab("Resultados",new JScrollPane(Result));
+		objetos.addTab("Código Objeto",new JScrollPane(objeto));
+		modelo = new DefaultTableModel(null,titulos);//Modelo de las tablas
+		tabla= new JTable(modelo);//tabla de simbolos
+		Tabla = new JScrollPane(tabla);
+		modeloCuadruplo = new DefaultTableModel(null,titulosCuadruplo);//Modelo de las tablas
+		tablaCuadruplo= new JTable(modeloCuadruplo);//tabla de simbolos
+		TablaCuadruplo = new JScrollPane(tablaCuadruplo);
+		/*Llenado del documento en pantalla*/
+		abrir();
+		/*Posicionamiento de los componentes de texto en pantalla*/
+		documentos.setBounds(1,1,665,273);
+		add(documentos);
+		analizada.setBounds(664, 1,687,273);
+		add(analizada);
+		resultados.setBounds(1,275,665,235);
+		add(resultados);
+		objetos.setBounds(1,510,665,200);
+		add(objetos);
+		JLabel CodInt = new JLabel(Rutinas.AjustarImagen("Intermedio.png", 50, 50));
+		JLabel CodInt2 = new JLabel("Código Intermedio: Cuadruplos.");
+		JLabel tabla = new JLabel(Rutinas.AjustarImagen("Simnolos.png", 50, 50));
+		JLabel tabla2 = new JLabel("Tabla De Simbolos:");
+		Tabla.setBounds(667, 327,683, 115);
+		tabla.setBounds(667, 277,50, 50);
+		tabla2.setBounds(717, 297,300, 15);
+		tabla2.setFont(new Font("Consolas", Font.BOLD, 16));
+		add(Tabla);
+		add(CodInt);
+		add(CodInt2);
+		add(tabla);
+		add(tabla2);
+		TablaCuadruplo.setBounds(667, 402,683, 115);
+		add(TablaCuadruplo);
+		setVisible(true);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		setIconImage(new ImageIcon("Icono.png").getImage());
+	}
+	public void hazEscuchas() {
+		/*Escuchadores*/
+		opcion.getItem(0).addActionListener(this);
+		opcion.getItem(2).addActionListener(this);
+		analisis.getItem(0).addActionListener(this);
+		analisis.getItem(2).addActionListener(this);
+		analisis.getItem(4).addActionListener(this);
+		generacion.getItem(0).addActionListener(this);
+		generacion.getItem(2).addActionListener(this);
+	}
+	public void actionPerformed(ActionEvent e) {
+		/*Opciones de archivo*/
+		if(e.getSource()==opcion.getItem(0)) {
+			guardar();
+			opcion.getItem(0).setEnabled(false);
+			analisis.getItem(0).setEnabled(true);
+			limpiarTabla();
+		}
+		if(e.getSource()==opcion.getItem(2)) {
+			opcion.getItem(0).setEnabled(true);
+			abrir();
+		}
+		/*Lexico*/
+		if(e.getSource()==analisis.getItem(0)) {
+			reinicia();
+			new Lexico(archivo.getAbsolutePath());
+			ban=false;//Es para evitar que se guarde sin darle modificar
+			llena(Lex,Result,"");//Lleno las area de texto con lo analizado
+			analisis.getItem(0).setEnabled(false);//Deshabilito el boton en este caso lexico
+			if(Lexico.errores.get(0).equals("No hay errores lexicos"))//Si el analisis lexico se hizo correctamente se habilita el sintactico
+				analisis.getItem(2).setEnabled(true);
+		}
+		/*Sintactico*/
+		if(e.getSource()==analisis.getItem(2)) {
+			new Sintactico();
+			llena(Lex,Result,"");
+			analisis.getItem(2).setEnabled(false);
+			if(Lexico.errores.get(1).equals("No hay errores sintacticos"))//Si el analisis sintactico se hizo correctamente se habilita el semantico
+				analisis.getItem(4).setEnabled(true);
+		}
+		/*Semantico*/
+		if(e.getSource()==analisis.getItem(4)) {
+			analisis.getItem(4).setEnabled(false);
+			new GeneraTabla();
+			new Semantico();
+			llena(Lex,Result,"");
+			if(Lexico.errores.get(2).equals("No hay errores semanticos"))//Si el analisis semantico se hizo correctamente se habilita el generacion
+			{
+				generacion.setEnabled(true);
+				generacion.getItem(0).setEnabled(true);
+			}
+		}
+		/*Intermedio*/
+		if(e.getSource()==generacion.getItem(0)) {
+			new Intermedio();
+			generacion.getItem(0).setEnabled(false);
+			generacion.getItem(2).setEnabled(true);
+		}
+		/*Objeto*/
+		if(e.getSource()==generacion.getItem(2)) {
+			new Ensamblador();
+			String mensaje="";
+			for(int i=0;i<Ensamblador.lineas.size();i++){
+				mensaje += Ensamblador.lineas.get(i)+"\n";
+			}
+			objeto.setText(mensaje);
+			generacion.getItem(2).setEnabled(false);
+		}
+		
+	}
+	public boolean guardar() {
+		try {
+			FileWriter fw = new FileWriter(archivo);
+			BufferedWriter bf = new BufferedWriter(fw);
+			bf.write(Doc.getText());
+			bf.close();
+			fw.close();
+		}catch (Exception e) {
+			System.out.println("No se ha podido modificar el archivo");
+			return false;
+		}
+		return true;
+	}
+	public boolean abrir() {
+		String texto="",linea;
+		try {
+			FileReader fr = new FileReader(archivo) ; 
+			BufferedReader br= new BufferedReader(fr);
+			while((linea=br.readLine())!=null) 
+				texto+=linea+"\n";
+			Doc.setText(texto);
+			return true;
+		}catch (Exception e) {
+			archivo=null;
+			JOptionPane.showMessageDialog(null, "El archivo no es de tipo texto", "Warning",
+					JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+	}
+	public void llena(JTextArea cuadro, JTextArea result, String mensalida) {
+		String muestra="",error="";
+		if(mensalida.length()==0) {
+		for(int i=0; i<Lexico.tokenAnalizados.size(); i++)
+			muestra+=Lexico.tokenAnalizados.get(i)+"\n";
+		for(int i=0; i<Lexico.errores.size(); i++)
+			error+=Lexico.errores.get(i)+"\n";
+		cuadro.setText(muestra);
+		result.setText(error);
+		}else {
+			cuadro.setText(mensalida);
+		}
+	}
+	public void formatoWindows() {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+			//UIManager.setLookAndFeel("com.jtattoo.plaf.smart.SmartLookAndFeel");
+			//UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (Exception e) {
+		}
+	}
+	
+	public void  reinicia(){
+		Lexico.renglon=1;
+	}
+	
+	public void limpiarTabla(){
+		while(tabla.getRowCount()!=0){
+			((DefaultTableModel)tabla.getModel()).removeRow(0);
+		}
+		while(tablaCuadruplo.getRowCount()!=0){
+			((DefaultTableModel)tablaCuadruplo.getModel()).removeRow(0);
+		}
+		objeto.setText("");
+		Result.setText("");
+		Lex.setText("");
+	}
+}
